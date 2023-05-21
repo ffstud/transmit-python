@@ -3,6 +3,7 @@ import socket
 import hashlib
 import math
 import time
+import socket
 
 from packet.DataPacket import *
 from packet.InitializePacket import *
@@ -16,8 +17,13 @@ class Sender:
         self.packet_size = packet_size
         self.transmission_id = transmission_id
         self.packet_delay_us = packet_delay_us
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind((receiver, ack_port))
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket.bind(("", ack_port))
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        except Exception as e:
+            print(e)
+
         self.sequence_number = 0
         self.ack_port = ack_port
         self.buffer_size = 65535
@@ -32,11 +38,12 @@ class Sender:
         initialize_packet = InitializePacket(self.transmission_id, self.sequence_number, max_sequence_number, os.path.basename(self.file_to_transfer.name))
         print("Sent initialize packet at:", int(time.time()*1000))
         self.send_packet(initialize_packet)
-        self.sequence_number += 1
 
         # wait for ack
         if(not Sender.handleAcknowledgementPacket(self)):
             return
+
+        self.sequence_number += 1
 
         # send data packets while computing the md5 hash
         md5 = hashlib.md5()
@@ -76,8 +83,8 @@ class Sender:
         print(packet)
 
     def checkAcknowledgementPacket(self, data:bytes) -> bool:
-        if(len(data) == 6):
-            if (PacketInterpreter.getTransmissionId(data) == self.transmission_id and PacketInterpreter.getSequenceNumber(data) == self.sequence_number):
+        if len(data) == 6:
+            if PacketInterpreter.getTransmissionId(data) == self.transmission_id and PacketInterpreter.getSequenceNumber(data) == self.sequence_number:
                 return True
         return False
     
