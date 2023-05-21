@@ -3,16 +3,19 @@ import socket
 from Sender import Sender
 
 def main():
-    if len(sys.argv) != 4:
-        print("Usage: python3 main.py transmission_id file_name port")
+    if len(sys.argv) != 6:
+        print("Usage: <transmissionId> <ip> <port> <file_name> <packet_size>")
         return
 
     transmission_id = int(sys.argv[1])
-    file_path = sys.argv[2]
+    ip = sys.argv[2]
     port = int(sys.argv[3])
+    file_path = sys.argv[4]
+    packet_size = int(sys.argv[5])
+
 
     with open(file_path, "rb") as f:
-        sender = Sender(f, socket.gethostbyname(socket.gethostname()), port, 128, transmission_id, 1)
+        sender = Sender(f, socket.gethostbyname(socket.gethostname()), port, ip, packet_size, transmission_id, 1)
         sender.send()
 
 if __name__ == '__main__':

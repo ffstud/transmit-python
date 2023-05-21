@@ -9,21 +9,22 @@ from packet.InitializePacket import *
 from packet.FinalizePacket import *
 
 class Sender:
-    def __init__(self, file_to_transfer, receiver, port, chunk_size, transmission_id, packet_delay_us):
+    def __init__(self, file_to_transfer, receiver, port, ip, packet_size, transmission_id, packet_delay_us):
         self.file_to_transfer = file_to_transfer
         self.receiver = receiver
         self.port = port
-        self.chunk_size = chunk_size
+        self.packet_size = packet_size
         self.transmission_id = transmission_id
         self.packet_delay_us = packet_delay_us
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sequence_number = 0
+        self.ip = ip
 
     def send(self):
         file_size = self.file_to_transfer.seek(0, 2)
 
         # calculate maxSequenceNumber
-        max_sequence_number = math.ceil(file_size/self.chunk_size)
+        max_sequence_number = math.ceil(file_size/self.packet_size)
 
         # send first (initialize) packet
         initialize_packet = InitializePacket(self.transmission_id, self.sequence_number, max_sequence_number, os.path.basename(self.file_to_transfer.name))
@@ -35,7 +36,7 @@ class Sender:
         md5 = hashlib.md5()
         with open(self.file_to_transfer.name, 'rb') as input_file:
             while True:
-                chunk = input_file.read(self.chunk_size)
+                chunk = input_file.read(self.packet_size)
                 if not chunk:
                     break
                 data_packet = DataPacket(self.transmission_id, self.sequence_number, chunk)
