@@ -9,7 +9,7 @@ from packet.InitializePacket import *
 from packet.FinalizePacket import *
 
 class Sender:
-    def __init__(self, file_to_transfer, receiver, port, ip, packet_size, transmission_id, packet_delay_us):
+    def __init__(self, file_to_transfer, receiver, port, packet_size, transmission_id, packet_delay_us):
         self.file_to_transfer = file_to_transfer
         self.receiver = receiver
         self.port = port
@@ -18,7 +18,6 @@ class Sender:
         self.packet_delay_us = packet_delay_us
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sequence_number = 0
-        self.ip = ip
 
     def send(self):
         file_size = self.file_to_transfer.seek(0, 2)

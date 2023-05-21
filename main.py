@@ -15,7 +15,7 @@ def main():
 
 
     with open(file_path, "rb") as f:
-        sender = Sender(f, socket.gethostbyname(socket.gethostname()), port, ip, packet_size, transmission_id, 1)
+        sender = Sender(f, socket.gethostbyname(ip), port, packet_size, transmission_id, 1)
         sender.send()
 
 if __name__ == '__main__':
