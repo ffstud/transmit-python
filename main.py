@@ -3,8 +3,8 @@ import socket
 from Sender import Sender
 
 def main():
-    if len(sys.argv) != 6:
-        print("Usage: <transmission_id> <ip> <port> <file_name> <packet_size>")
+    if len(sys.argv) != 7:
+        print("Usage: <transmission_id> <ip> <target_port> <file_name> <packet_size> <ack_port>")
         return
 
     transmission_id = int(sys.argv[1])
@@ -12,10 +12,11 @@ def main():
     port = int(sys.argv[3])
     file_path = sys.argv[4]
     packet_size = int(sys.argv[5])
+    ack_port = int(sys.argv[6])
 
 
     with open(file_path, "rb") as f:
-        sender = Sender(f, socket.gethostbyname(ip), port, packet_size, transmission_id, 1)
+        sender = Sender(f, socket.gethostbyname(ip), port, packet_size, transmission_id, ack_port, 1)
         sender.send()
 
 if __name__ == '__main__':
