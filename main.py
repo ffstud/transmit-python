@@ -4,7 +4,7 @@ from Sender import Sender
 
 def main():
     if len(sys.argv) != 6:
-        print("Usage: <transmissionId> <ip> <port> <file_name> <packet_size>")
+        print("Usage: <transmission_id> <ip> <port> <file_name> <packet_size>")
         return
 
     transmission_id = int(sys.argv[1])
