@@ -4,7 +4,7 @@ from Sender import Sender
 
 def main():
     if len(sys.argv) != 7:
-        print("Usage: <transmission_id> <ip> <target_port> <file_name> <packet_size> <ack_port>")
+        print("Usage: <transmission_id> <ip> <target_port> <file_name> <packet_size> <ack_ip> <ack_port>")
         return
 
     transmission_id = int(sys.argv[1])
@@ -16,7 +16,7 @@ def main():
 
 
     with open(file_path, "rb") as f:
-        sender = Sender(f, socket.gethostbyname(ip), port, packet_size, transmission_id, ack_port, 1)
+        sender = Sender(f, socket.gethostbyname(ip), port, packet_size, transmission_id, ack_port, 0)
         sender.send()
 
 if __name__ == '__main__':
