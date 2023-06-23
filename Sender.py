@@ -7,8 +7,10 @@ from packet.DataPacket import *
 from packet.InitializePacket import *
 from packet.FinalizePacket import *
 
+
 class Sender:
-    def __init__(self, file_to_transfer, receiver, port, packet_size, transmission_id, ack_port, packet_delay_us, operating_mode, window_size):
+    def __init__(self, file_to_transfer, receiver, port, packet_size, transmission_id, ack_port, packet_delay_us,
+                 operating_mode, window_size):
         self.file_to_transfer = file_to_transfer
         self.receiver = receiver
         self.port = port
@@ -23,25 +25,31 @@ class Sender:
         if self.operating_mode != 0:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.bind(("", ack_port))
+            self.window_buffer = {}
             self.socket.settimeout(5)
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  #
 
     def send(self):
         file_size = os.path.getsize(self.file_to_transfer)
 
         # calculate maxSequenceNumber
-        max_sequence_number = math.ceil(file_size/self.packet_size)
+        max_sequence_number = math.ceil(file_size / self.packet_size)
 
         # send first (initialize) packet
-        initialize_packet = InitializePacket(self.transmission_id, self.sequence_number, max_sequence_number, os.path.basename(self.file_to_transfer))
-        print("Sent initialize packet at:", int(time.time()*1000))
+        initialize_packet = InitializePacket(self.transmission_id, self.sequence_number, max_sequence_number,
+                                             os.path.basename(self.file_to_transfer))
+        print("Sent initialize packet at:", int(time.time() * 1000))
         self.send_packet(initialize_packet)
 
         # wait for ack
-        if self.operating_mode != 0 and not self.handleAcknowledgementPacket():
+        if self.operating_mode == 1 and not self.handleAcknowledgementPacket():
             return
+
+        if self.operating_mode == 2 and self.window_buffer.__sizeof__() == self.window_size:
+            while not self.handleSlidingAcknowledgementPacket():
+                pass
 
         self.sequence_number += 1
 
@@ -55,23 +63,32 @@ class Sender:
                 data_packet = DataPacket(self.transmission_id, self.sequence_number, chunk)
                 self.send_packet(data_packet)
                 md5.update(chunk)
-                        # wait for ack
-                if self.operating_mode != 0 and not self.handleAcknowledgementPacket():
+                # wait for ack
+                if self.operating_mode == 1 and not self.handleAcknowledgementPacket():
                     return
+                if self.operating_mode == 2 and self.window_buffer.__sizeof__() == self.window_size:
+                    while not self.handleSlidingAcknowledgementPacket():
+                        pass
                 self.sequence_number += 1
 
         # send last (finalize) packet
         finalize_packet = FinalizePacket(self.transmission_id, self.sequence_number, md5.digest())
-        print("Sent finalize packet at:", int(time.time()*1000))
+        print("Sent finalize packet at:", int(time.time() * 1000))
         self.send_packet(finalize_packet)
 
         # wait for ack
-        if self.operating_mode != 0 and not self.handleAcknowledgementPacket():
+        if self.operating_mode == 1 and not self.handleAcknowledgementPacket():
             return
+
+        if self.operating_mode == 2:
+            while not self.handleSlidingAcknowledgementPacket():
+                pass
 
         self.socket.close()
 
     def send_packet(self, packet):
+        if self.operating_mode == 2:
+            self.window_buffer[packet.sequence_number] = packet
         # convert packet to bytes
         packet_bytes = packet.serialize()
 
@@ -81,12 +98,13 @@ class Sender:
 
         time.sleep(self.packet_delay_us / 1000000)
 
-        print("Sent packet:")
-        print(packet)
+        # print("Sent packet:")
+        # print(packet)
 
-    def checkAcknowledgementPacket(self, data:bytes) -> bool:
+    def checkAcknowledgementPacket(self, data: bytes) -> bool:
         if len(data) == 6:
-            if PacketInterpreter.getTransmissionId(data) == self.transmission_id and PacketInterpreter.getSequenceNumber(data) == self.sequence_number:
+            if PacketInterpreter.getTransmissionId(
+                    data) == self.transmission_id and PacketInterpreter.getSequenceNumber(data) == self.sequence_number:
                 return True
         return False
 
@@ -102,3 +120,18 @@ class Sender:
             self.socket.close()
             return False
         return True
+
+    def handleSlidingAcknowledgementPacket(self) -> bool:
+        try:
+            data, addr = self.socket.recvfrom(self.buffer_size)
+            if not self.checkAcknowledgementPacket(data):
+                data, addr = self.socket.recvfrom(self.buffer_size)
+                self.send_packet(self.window_buffer.get(PacketInterpreter.getSequenceNumber(data)))
+                return False
+            else:
+                self.window_buffer.clear()
+                return True
+        except Exception as e:
+            print("Did not receive acknowledgement packet in time, abort transmission")
+            self.socket.close()
+            return True
