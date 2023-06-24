@@ -4,7 +4,7 @@ from Sender import Sender
 
 def main():
     operating_mode = 0
-    if len(sys.argv) > 0:
+    if len(sys.argv) > 1:
         operating_mode = int(sys.argv[1])
 
     if operating_mode == 0 and len(sys.argv) != 7:
@@ -33,8 +33,13 @@ def main():
         window_size = -1
 
 
-    sender = Sender(file_path, socket.gethostbyname(ip), port, packet_size, transmission_id, ack_port, 1, operating_mode, window_size)
+    sender = Sender(file_path, socket.gethostbyname(ip), port, packet_size, transmission_id, ack_port, operating_mode, window_size)
     sender.send()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Program terminated by user")
+        sys.exit(0)
+

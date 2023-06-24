@@ -9,14 +9,13 @@ from packet.FinalizePacket import *
 
 
 class Sender:
-    def __init__(self, file_to_transfer, receiver, port, packet_size, transmission_id, ack_port, packet_delay_us,
+    def __init__(self, file_to_transfer, receiver, port, packet_size, transmission_id, ack_port,
                  operating_mode, window_size):
         self.file_to_transfer = file_to_transfer
         self.receiver = receiver
         self.port = port
         self.packet_size = packet_size
         self.transmission_id = transmission_id
-        self.packet_delay_us = packet_delay_us
         self.operating_mode = operating_mode
         self.window_size = window_size
         self.sequence_number = 0
@@ -29,7 +28,7 @@ class Sender:
             self.socket.settimeout(5)
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  #
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     def send(self):
         file_size = os.path.getsize(self.file_to_transfer)
@@ -95,8 +94,6 @@ class Sender:
         # create UDP packet
         udp_packet = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_packet.sendto(packet_bytes, (self.receiver, self.port))
-
-        time.sleep(self.packet_delay_us / 1000000)
 
         # print("Sent packet:")
         # print(packet)
