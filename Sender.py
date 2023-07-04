@@ -25,7 +25,7 @@ class Sender:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.bind(("", ack_port))
             self.window_buffer = {}
-            self.socket.settimeout(5)
+            self.socket.settimeout(5000)
         else:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -46,7 +46,7 @@ class Sender:
         if self.operating_mode == 1 and not self.handleAcknowledgementPacket():
             return
 
-        if self.operating_mode == 2 and self.window_buffer.__sizeof__() == self.window_size:
+        if self.operating_mode == 2 and len(self.window_buffer) == self.window_size:
             while not self.handleSlidingAcknowledgementPacket():
                 pass
 
@@ -65,7 +65,7 @@ class Sender:
                 # wait for ack
                 if self.operating_mode == 1 and not self.handleAcknowledgementPacket():
                     return
-                if self.operating_mode == 2 and self.window_buffer.__sizeof__() == self.window_size:
+                if self.operating_mode == 2 and len(self.window_buffer) == self.window_size:
                     while not self.handleSlidingAcknowledgementPacket():
                         pass
                 self.sequence_number += 1
@@ -86,8 +86,8 @@ class Sender:
         self.socket.close()
 
     def send_packet(self, packet):
-        if self.operating_mode == 2:
-            self.window_buffer[packet.sequence_number] = packet
+        #if self.operating_mode == 2:
+        #    self.window_buffer[packet.sequence_number] = packet
         # convert packet to bytes
         packet_bytes = packet.serialize()
 
@@ -123,12 +123,14 @@ class Sender:
             data, addr = self.socket.recvfrom(self.buffer_size)
             if not self.checkAcknowledgementPacket(data):
                 data, addr = self.socket.recvfrom(self.buffer_size)
-                self.send_packet(self.window_buffer.get(PacketInterpreter.getSequenceNumber(data)))
+                temp_packet = PacketInterpreter.getSequenceNumber(data)
+                self.send_packet(self.window_buffer.get(temp_packet))
                 return False
             else:
                 self.window_buffer.clear()
                 return True
         except Exception as e:
+            print(e)
             print("Did not receive acknowledgement packet in time, abort transmission")
             self.socket.close()
             return True
