@@ -86,8 +86,6 @@ class Sender:
         self.socket.close()
 
     def send_packet(self, packet):
-        #if self.operating_mode == 2:
-        #    self.window_buffer[packet.sequence_number] = packet
         # convert packet to bytes
         packet_bytes = packet.serialize()
 
